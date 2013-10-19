@@ -98,6 +98,9 @@ void ofxParticleEmitter::exit()
 
 bool ofxParticleEmitter::loadFromXml( const std::string& filename )
 {
+    // Clean up things
+    exit();
+    
 	bool ok = false;
 	
 	settings = new ofxXmlSettings();
@@ -222,6 +225,9 @@ void ofxParticleEmitter::setupArrays()
 	
 	// Reset the elapsed time
 	elapsedTime = 0;
+    
+    // Reset lastUpdateMillis to current time to avoid stutter at beginning
+    lastUpdateMillis = ofGetElapsedTimeMillis();
 }
 
 // ------------------------------------------------------------------------
@@ -230,17 +236,46 @@ void ofxParticleEmitter::setupArrays()
 
 bool ofxParticleEmitter::addParticle()
 {
-	// If we have already reached the maximum number of particles then do nothing
-	if(particleCount == maxParticles)
-		return false;
+    int particleIndex = 0;
+    
+	// If we have already reached the maximum number of particles then init the oldest one
+	if(particleCount == maxParticles) {
+		
+        //return false;
+
+        
+        //TODO: pick the oldest particle and init that
+        // start at 0 particle index;
+        int oldestIndex = 0;
+        float oldest = 1.0;
+        float youth = 1.0;
+        
+        // walk through particles and compare relative ages
+        // stop when you find one whose age is < 0.1 OR when you reach the end of the list
+        while(particles[particleIndex].timeToLive > 0.2 && particleIndex < maxParticles) {
+            youth = particles[particleIndex].timeToLive / particles[particleIndex].timeToLiveStart;
+            
+            if (youth < oldest) {
+                oldest = youth;
+                oldestIndex = particleIndex;
+            }    
+         
+            particleIndex ++;
+        }
+        particleIndex = oldestIndex;
+    }
+    else {
+        particleIndex = particleCount;
+
+        // Increment the particle count
+        particleCount++;
+
+    }
 	
 	// Take the next particle out of the particle pool we have created and initialize it
-	Particle *particle = &particles[particleCount];
+	Particle *particle = &particles[particleIndex];
 	initParticle( particle );
-	
-	// Increment the particle count
-	particleCount++;
-	
+		
 	// Return true to show that a particle has been created
 	return true;
 }
@@ -280,7 +315,8 @@ void ofxParticleEmitter::initParticle( Particle* particle )
 	
 	// Calculate the particles life span using the life span and variance passed in
 	particle->timeToLive = MAX(0, particleLifespan + particleLifespanVariance * RANDOM_MINUS_1_TO_1());
-	
+    particle->timeToLiveStart = particle->timeToLive;
+    	
 	// Calculate the particle size using the start and finish particle sizes
 	GLfloat particleStartSize = startParticleSize + startParticleSizeVariance * RANDOM_MINUS_1_TO_1();
 	GLfloat particleFinishSize = finishParticleSize + finishParticleSizeVariance * RANDOM_MINUS_1_TO_1();
@@ -342,13 +378,15 @@ void ofxParticleEmitter::update()
         if(active && emissionRate) {
             float rate = 1.0f/emissionRate;
             emitCounter += aDelta;
-            while(particleCount < maxParticles && emitCounter > rate) {
+            while(emitCounter > rate) {
                 addParticle();
                 emitCounter -= rate;
             }
             
-            elapsedTime += aDelta;
-            if(duration != -1 && duration < elapsedTime)
+            elapsedTime += aDelta; // total amount of time that emitter has been running
+            if(duration != -1 && duration < elapsedTime) 
+                // stops the particle emitter after a specified amount of time in milliseconds
+                // duration is set to -1 in order for emitter to run indefinitely
                 stopParticleEmitter();
         }
         
@@ -385,7 +423,8 @@ void ofxParticleEmitter::update()
                     
                     if (currentParticle->radius < minRadius)
                         currentParticle->timeToLive = 0;
-                } else {
+                } 
+                else {
                     Vector2f tmp, radial, tangential;
                     
                     radial = Vector2fZero;

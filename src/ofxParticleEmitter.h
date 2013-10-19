@@ -78,6 +78,7 @@ typedef struct
 	GLfloat		particleSize;
 	GLfloat		particleSizeDelta;
 	GLfloat		timeToLive;
+    GLfloat     timeToLiveStart;
 } Particle;
 
 // ------------------------------------------------------------------------
