@@ -332,117 +332,117 @@ void ofxParticleEmitter::update()
     
     if ( !paused ) {
 
-	// Calculate the emission rate
-	emissionRate = maxParticles / particleLifespan;
-
-	GLfloat aDelta = (ofGetElapsedTimeMillis()-lastUpdateMillis)/1000.0f;
-	
-	// If the emitter is active and the emission rate is greater than zero then emit
-	// particles
-	if(active && emissionRate) {
-		float rate = 1.0f/emissionRate;
-		emitCounter += aDelta;
-		while(particleCount < maxParticles && emitCounter > rate) {
-			addParticle();
-			emitCounter -= rate;
-		}
-		
-		elapsedTime += aDelta;
-		if(duration != -1 && duration < elapsedTime)
-			stopParticleEmitter();
-	}
-	
-	// Reset the particle index before updating the particles in this emitter
-	particleIndex = 0;
-	
-	// Loop through all the particles updating their location and color
-	while(particleIndex < particleCount) {
-		
-		// Get the particle for the current particle index
-		Particle *currentParticle = &particles[particleIndex];
+        // Calculate the emission rate
+        emissionRate = maxParticles / particleLifespan;
         
-        // FIX 1
-        // Reduce the life span of the particle
-        currentParticle->timeToLive -= aDelta;
-		
-		// If the current particle is alive then update it
-		if(currentParticle->timeToLive > 0) {
-			
-			// If maxRadius is greater than 0 then the particles are going to spin otherwise
-			// they are effected by speed and gravity
-			if (emitterType == kParticleTypeRadial) {
-				
-                // FIX 2
-                // Update the angle of the particle from the sourcePosition and the radius.  This is only
-				// done of the particles are rotating
-				currentParticle->angle += currentParticle->degreesPerSecond * aDelta;
-				currentParticle->radius -= currentParticle->radiusDelta;
+        GLfloat aDelta = (ofGetElapsedTimeMillis()-lastUpdateMillis)/1000.0f;
+        
+        // If the emitter is active and the emission rate is greater than zero then emit
+        // particles
+        if(active && emissionRate) {
+            float rate = 1.0f/emissionRate;
+            emitCounter += aDelta;
+            while(particleCount < maxParticles && emitCounter > rate) {
+                addParticle();
+                emitCounter -= rate;
+            }
+            
+            elapsedTime += aDelta;
+            if(duration != -1 && duration < elapsedTime)
+                stopParticleEmitter();
+        }
+        
+        // Reset the particle index before updating the particles in this emitter
+        particleIndex = 0;
+        
+        // Loop through all the particles updating their location and color
+        while(particleIndex < particleCount) {
+            
+            // Get the particle for the current particle index
+            Particle *currentParticle = &particles[particleIndex];
+            
+            // FIX 1
+            // Reduce the life span of the particle
+            currentParticle->timeToLive -= aDelta;
+            
+            // If the current particle is alive then update it
+            if(currentParticle->timeToLive > 0) {
                 
-				Vector2f tmp;
-				tmp.x = sourcePosition.x - cosf(currentParticle->angle) * currentParticle->radius;
-				tmp.y = sourcePosition.y - sinf(currentParticle->angle) * currentParticle->radius;
-				currentParticle->position = tmp;
-				
-				if (currentParticle->radius < minRadius)
-					currentParticle->timeToLive = 0;
-			} else {
-				Vector2f tmp, radial, tangential;
+                // If maxRadius is greater than 0 then the particles are going to spin otherwise
+                // they are effected by speed and gravity
+                if (emitterType == kParticleTypeRadial) {
+                    
+                    // FIX 2
+                    // Update the angle of the particle from the sourcePosition and the radius.  This is only
+                    // done of the particles are rotating
+                    currentParticle->angle += currentParticle->degreesPerSecond * aDelta;
+                    currentParticle->radius -= currentParticle->radiusDelta;
+                    
+                    Vector2f tmp;
+                    tmp.x = sourcePosition.x - cosf(currentParticle->angle) * currentParticle->radius;
+                    tmp.y = sourcePosition.y - sinf(currentParticle->angle) * currentParticle->radius;
+                    currentParticle->position = tmp;
+                    
+                    if (currentParticle->radius < minRadius)
+                        currentParticle->timeToLive = 0;
+                } else {
+                    Vector2f tmp, radial, tangential;
+                    
+                    radial = Vector2fZero;
+                    Vector2f diff = Vector2fSub(currentParticle->startPos, Vector2fZero);
+                    
+                    currentParticle->position = Vector2fSub(currentParticle->position, diff);
+                    
+                    if (currentParticle->position.x || currentParticle->position.y)
+                        radial = Vector2fNormalize(currentParticle->position);
+                    
+                    tangential.x = radial.x;
+                    tangential.y = radial.y;
+                    radial = Vector2fMultiply(radial, currentParticle->radialAcceleration);
+                    
+                    GLfloat newy = tangential.x;
+                    tangential.x = -tangential.y;
+                    tangential.y = newy;
+                    tangential = Vector2fMultiply(tangential, currentParticle->tangentialAcceleration);
+                    
+                    tmp = Vector2fAdd( Vector2fAdd(radial, tangential), gravity);
+                    tmp = Vector2fMultiply(tmp, aDelta);
+                    currentParticle->direction = Vector2fAdd(currentParticle->direction, tmp);
+                    tmp = Vector2fMultiply(currentParticle->direction, aDelta);
+                    currentParticle->position = Vector2fAdd(currentParticle->position, tmp);
+                    currentParticle->position = Vector2fAdd(currentParticle->position, diff);
+                }
                 
-                radial = Vector2fZero;
-                Vector2f diff = Vector2fSub(currentParticle->startPos, Vector2fZero);
+                // Update the particles color
+                currentParticle->color.red += currentParticle->deltaColor.red;
+                currentParticle->color.green += currentParticle->deltaColor.green;
+                currentParticle->color.blue += currentParticle->deltaColor.blue;
+                currentParticle->color.alpha += currentParticle->deltaColor.alpha;
                 
-                currentParticle->position = Vector2fSub(currentParticle->position, diff);
+                // Place the position of the current particle into the vertices array
+                vertices[particleIndex].x = currentParticle->position.x;
+                vertices[particleIndex].y = currentParticle->position.y;
                 
-                if (currentParticle->position.x || currentParticle->position.y)
-                    radial = Vector2fNormalize(currentParticle->position);
+                // Place the size of the current particle in the size array
+                currentParticle->particleSize += currentParticle->particleSizeDelta;
+                vertices[particleIndex].size = MAX(0, currentParticle->particleSize);
                 
-                tangential.x = radial.x;
-                tangential.y = radial.y;
-                radial = Vector2fMultiply(radial, currentParticle->radialAcceleration);
+                // Place the color of the current particle into the color array
+                vertices[particleIndex].color = currentParticle->color;
                 
-                GLfloat newy = tangential.x;
-                tangential.x = -tangential.y;
-                tangential.y = newy;
-                tangential = Vector2fMultiply(tangential, currentParticle->tangentialAcceleration);
+                // Update the particle counter
+                particleIndex++;
+            } else {
                 
-				tmp = Vector2fAdd( Vector2fAdd(radial, tangential), gravity);
-                tmp = Vector2fMultiply(tmp, aDelta);
-				currentParticle->direction = Vector2fAdd(currentParticle->direction, tmp);
-				tmp = Vector2fMultiply(currentParticle->direction, aDelta);
-				currentParticle->position = Vector2fAdd(currentParticle->position, tmp);
-                currentParticle->position = Vector2fAdd(currentParticle->position, diff);
-			}
-			
-			// Update the particles color
-			currentParticle->color.red += currentParticle->deltaColor.red;
-			currentParticle->color.green += currentParticle->deltaColor.green;
-			currentParticle->color.blue += currentParticle->deltaColor.blue;
-			currentParticle->color.alpha += currentParticle->deltaColor.alpha;
-			
-			// Place the position of the current particle into the vertices array
-			vertices[particleIndex].x = currentParticle->position.x;
-			vertices[particleIndex].y = currentParticle->position.y;
-			
-			// Place the size of the current particle in the size array
-			currentParticle->particleSize += currentParticle->particleSizeDelta;
-			vertices[particleIndex].size = MAX(0, currentParticle->particleSize);
-			
-			// Place the color of the current particle into the color array
-			vertices[particleIndex].color = currentParticle->color;
-			
-			// Update the particle counter
-			particleIndex++;
-		} else {
-			
-			// As the particle is not alive anymore replace it with the last active particle 
-			// in the array and reduce the count of particles by one.  This causes all active particles
-			// to be packed together at the start of the array so that a particle which has run out of
-			// life will only drop into this clause once
-			if(particleIndex != particleCount - 1)
-				particles[particleIndex] = particles[particleCount - 1];
-			particleCount--;
-		}
-	}
+                // As the particle is not alive anymore replace it with the last active particle 
+                // in the array and reduce the count of particles by one.  This causes all active particles
+                // to be packed together at the start of the array so that a particle which has run out of
+                // life will only drop into this clause once
+                if(particleIndex != particleCount - 1)
+                    particles[particleIndex] = particles[particleCount - 1];
+                particleCount--;
+            }
+        }
     }
 
 	lastUpdateMillis = ofGetElapsedTimeMillis();
