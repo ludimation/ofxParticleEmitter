@@ -55,6 +55,8 @@ ofxParticleEmitter::ofxParticleEmitter()
 	duration = -1;
 	lastUpdateMillis = 0;
     
+    paused = false;
+    
 	blendFuncSource = blendFuncDestination = 0;
 
 	maxRadius = maxRadiusVariance = radiusSpeed = minRadius = 0.0f;
@@ -71,6 +73,10 @@ ofxParticleEmitter::ofxParticleEmitter()
 ofxParticleEmitter::~ofxParticleEmitter()
 {
 	exit();
+}
+
+void ofxParticleEmitter::pause(){
+    paused = !paused;
 }
 
 void ofxParticleEmitter::exit()
@@ -323,6 +329,8 @@ void ofxParticleEmitter::stopParticleEmitter()
 void ofxParticleEmitter::update()
 {
 	if ( !active ) return;
+    
+    if ( !paused ) {
 
 	// Calculate the emission rate
 	emissionRate = maxParticles / particleLifespan;
@@ -435,6 +443,7 @@ void ofxParticleEmitter::update()
 			particleCount--;
 		}
 	}
+    }
 
 	lastUpdateMillis = ofGetElapsedTimeMillis();
 }

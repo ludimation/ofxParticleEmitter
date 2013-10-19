@@ -171,6 +171,7 @@ public:
 	bool	loadFromXml( const std::string& filename );
 	void	update();
 	void	draw( int x = 0, int y = 0 );
+    void    pause();
 	void	exit();
 
 	int				emitterType;
@@ -190,7 +191,9 @@ public:
 	GLfloat			duration;
 	int				blendFuncSource, blendFuncDestination;
 
-	// Particle ivars only used when a maxRadius value is provided.  These values are used for
+	bool paused;
+	
+    // Particle ivars only used when a maxRadius value is provided.  These values are used for
 	// the special purpose of creating the spinning portal emitter
 	GLfloat			maxRadius;						// Max radius at which particles are drawn when rotating
 	GLfloat			maxRadiusVariance;				// Variance of the maxRadius
