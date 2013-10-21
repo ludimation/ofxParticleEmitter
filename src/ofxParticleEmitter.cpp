@@ -473,12 +473,15 @@ void ofxParticleEmitter::update()
                 particleIndex++;
             } else {
                 
-                // As the particle is not alive anymore replace it with the last active particle 
+                // As the particle is not alive anymore swap it with the last active particle 
                 // in the array and reduce the count of particles by one.  This causes all active particles
                 // to be packed together at the start of the array so that a particle which has run out of
                 // life will only drop into this clause once
-                if(particleIndex != particleCount - 1)
+                if(particleIndex != particleCount - 1) {
+                    Particle* tempParticle = &particles[particleIndex];
                     particles[particleIndex] = particles[particleCount - 1];
+                    particles[particleCount - 1] = *tempParticle;
+                }
                 particleCount--;
             }
         }
